@@ -2,6 +2,7 @@
 import argparse
 import logging
 import hashlib
+import yaml
 
 import numpy as np
 import h5py as h5
@@ -17,26 +18,7 @@ from embedding.cholesky.simple_cholesky import cholesky
 from embedding.cholesky.integrals.gto import GTOIntegralGenerator
 
 # TODO: make virtual env and use current python version(s)
-# TODO: define all system settings in a yaml file
-
-def xyz2pyscf(fname):
-    '''
-    this should read a standard xyz file.
-    '''
-    print(f'  [+] reading geometry from {fname} as xyz format')
-    atoms = []
-    with open(fname,'r') as f:
-        for line_num, linestr in enumerate(f):
-            line = linestr.split()
-            logging.debug(f'(unsplit) linestr : {linestr}')
-            logging.debug(f'line : {line}')
-            if line_num == 0:
-                print(f'    [+] reading {linestr[0]} atoms')
-            elif line_num == 1:
-                print(f'    [+] comment line from xyz file: {linestr}')
-            else:
-                atoms.append([line[0], (line[1],line[2],line[3]) ])
-    return atoms
+# TODO: define spin and charge in input file (yaml)
 
 def read_ecp_basis(fname):
     '''
@@ -71,8 +53,6 @@ def read_ecp_basis(fname):
 
     '''
 
-    import yaml
-
     def _process_basis(input_basis):
         '''
         process basis into format that PySCF can directly use.
@@ -105,6 +85,86 @@ def read_ecp_basis(fname):
 
     return ecp, basis
 
+def read_geom(fname):
+    '''
+    read geometry in xyz format from yaml file
+
+    Format details for a system with atomic species 'atom1', 'atom2', ... :
+    
+    ```yaml
+    geom:
+      comment: a description of the geometry
+      atoms: |
+        [atom1] [x coord.] [y coord.] [z coord.]
+        [atom2] [x coord.] [y coord.] [z coord.]
+        ... entry for each atom in system
+    ```
+
+    '''
+
+    with open(fname,'r') as f:
+        input_file = yaml.safe_load(f) # limits load to simple python objects, just what we want!
+    
+    logging.debug(f' input_file = {input_file} ')
+    
+    try:
+        ecp = input_file['geom']
+    except KeyError:
+        logging.error('could not read geometry from input file')
+        exit()
+
+    geom = input_file['geom']
+    logging.debug(f' geom = {geom} ')
+
+    print(f'\n [+] reading geometry : comment {geom["comment"]} ')
+    atoms = geom["atoms"]
+
+    return atoms
+
+
+def read_embedding_params(fname):
+    '''
+    read embedding parameters from yaml file
+
+    Format details:
+
+    ```yaml
+    embedding:
+      afqmc:
+        ncore: None
+        nactive: None
+        nelec: None
+      scalar_shci:
+        ncore: None
+        nactive: None
+        nelec: None
+      soc_shci:
+        ncore: None
+        nactive: None
+        nelec: None
+    ```
+
+    note: a value of None will be interpreted as 0 for 'ncore',
+          or all orbitals active for 'nactive', and all electrons for 'nelec'
+    '''
+
+    with open(fname,'r') as f:
+        input_file = yaml.safe_load(f) # limits load to simple python objects, just what we want!
+    
+    logging.debug(f' input_file = {input_file} ')
+    
+    try:
+        ecp = input_file['embedding']
+    except KeyError:
+        print(f'\n [+] no embedding parameters found in input file : proceding with no embedding ')
+        return None
+
+    emb = input_file['embedding']
+    logging.debug(f' emb = {emb} ')
+
+    return emb
+
+
 def get_args():
     '''
     gets and parses terminal arguments
@@ -126,18 +186,11 @@ def get_args():
     parser = argparse.ArgumentParser(description='Compute truncated SOC-SHCI wavefunctions for AFQMC trial wavefunctions.')
     
     # required
-
-    parser.add_argument('--geom-file', '-g', metavar='geometry', type=str,
+    parser.add_argument('--input', '-i', metavar='input file', type=str,
                         action='store',
-                        dest='geom',
-                        default='mol.xyz',
-                        help='name of file where geometry is located.')
-
-    parser.add_argument('--basis-file', '-b', metavar='basis_file', type=str,
-                        action='store',
-                        dest='basis',
-                        default='basis.yaml',
-                        help="name of file containing basis / ecp data (YAML format)")
+                        dest='input_file',
+                        default='input.yaml',
+                        help="name of input file (YAML format)")
 
     parser.add_argument(metavar='spin', type=int,
                         action='store',
@@ -162,7 +215,6 @@ def get_args():
                         dest='run_scalar',
                         help='if set, skips the scalar SHCISCF calculation before SOC-SHCI')
 
-    #TODO: currently not used
     parser.add_argument('--output','-o', metavar='output', type=str,
                         action='store',
                         dest='outname',
@@ -209,7 +261,7 @@ def SOC_SHCI(mf, norb, nelec, nroots=1, maxM=1000, tol=1.0e-8, ncore_afqmc=0, af
 
     return mc
 
-def main(geom,nroots=1,avg_nroots=None,run_scalar=True,**mol_kwargs):
+def main(geom,nroots=1,avg_nroots=None,run_scalar=True,emb_params=None,**mol_kwargs):
     '''
     
     Inputs:
@@ -223,15 +275,19 @@ def main(geom,nroots=1,avg_nroots=None,run_scalar=True,**mol_kwargs):
     '''
 
 
-    # TODO: set these parameters in a disctionary
-    ncore_afqmc = 2
+    ncore_afqmc = emb_params['afqmc']['ncore']
 
-    norb_scalar_shci = 9
-    nelec_scalar_shci = 7
+    norb_scalar_shci = emb_params['scalar_shci']['nactive']
+    nelec_scalar_shci = emb_params['scalar_shci']['nelec']
 
-    nvirt_soc_shci = 5
-    norb_soc_shci = 39 - ncore_afqmc - nvirt_soc_shci
-    nelec_soc_shci = 25 - 2*ncore_afqmc
+    norb_soc_shci = emb_params['soc_shci']['nactive']
+    nelec_soc_shci = emb_params['soc_shci']['nelec']
+
+    try:
+        assert norb_soc_shci is not None and nelec_soc_shci is not None
+    except AssertionError:
+        logging.error('active space is not set for soc SHCI : check input file')
+        return
 
     mol = gto.M(atom=geom, **mol_kwargs)
 
@@ -278,10 +334,17 @@ def main(geom,nroots=1,avg_nroots=None,run_scalar=True,**mol_kwargs):
     
     # 3. rohf for H^A
     mol.nelec = nelec_fc
-    # TODO: Q: do we need to give custom_ROHF the 'eri' for the active space?
+    
     rohf_A = custom_ROHF(mol, S, E_const, oneBody, eri=hsints_to_eri(twoBody))
 
     if run_scalar:
+
+        try:
+            assert norb_scalar_shci is not None and nelec_scalar_shci is not None
+        except AssertionError:
+            logging.error('scalar SHCI requested, but no active space is set for scalar SHCI')
+            return
+
         if avg_nroots is None:
             avg_nroots = nroots
         # 4. scalar SHCISCF in lmited active space
@@ -350,10 +413,18 @@ def test():
 
     avg_nroots = 3
 
+    emb_params = {'afqmc' : {'ncore' : 2,
+                             'nactive' : None},
+                  'scalar_shci' : {'nactive' : 9,
+                                    'nelec' : 7},
+                  'soc_shci' : {'nactive' : 32,
+                                'nelec' : 21}}
+
     main(geometry,
          nroots=nroots,
          avg_nroots=avg_nroots,
          run_scalar=True,
+         emb_params=emb_params,
          basis=basis,
          ecp=ecp,
          spin=1,
@@ -370,11 +441,15 @@ if __name__ == '__main__':
     if cli.run_test:
         test()
     else:
-        ecp, basis = read_ecp_basis(cli.basis)
-        main(geom=xyz2pyscf(cli.geom),
+        ecp, basis = read_ecp_basis(cli.input_file)
+        geom = read_geom(cli.input_file)
+        emb_params = read_embedding_params(cli.input_file)
+
+        main(geom=geom,
             nroots=cli.soc_nroots,
             avg_nroots=cli.avg_nroots,
             run_scalar=cli.run_scalar,
+            emb_params=emb_params,
             spin=cli.spin,
             basis=basis,
             ecp=ecp,
