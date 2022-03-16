@@ -362,7 +362,7 @@ def test():
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s : [%(funcName)s - %(levelname)s] : %(message)s')
 
     cli = get_args()
