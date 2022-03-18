@@ -274,22 +274,44 @@ def main(geom,nroots=1,avg_nroots=None,run_scalar=True,emb_params=None,**mol_kwa
     - add option to force re-calculation of the Cholesky vectors in GTO basis
     '''
 
+    if emb_params['afqmc']['ncore'] != 'None':
+        ncore_afqmc = int(emb_params['afqmc']['ncore'])
+    else:
+        ncore_afqmc = 0
 
-    ncore_afqmc = emb_params['afqmc']['ncore']
-
-    norb_scalar_shci = emb_params['scalar_shci']['nactive']
-    nelec_scalar_shci = emb_params['scalar_shci']['nelec']
-
-    norb_soc_shci = emb_params['soc_shci']['nactive']
-    nelec_soc_shci = emb_params['soc_shci']['nelec']
-
-    try:
-        assert norb_soc_shci is not None and nelec_soc_shci is not None
-    except AssertionError:
-        logging.error('active space is not set for soc SHCI : check input file')
-        return
+    
 
     mol = gto.M(atom=geom, **mol_kwargs)
+    M_full = mol.nao_nr()
+
+    if emb_params['scalar_shci']['nactive'] != 'None':
+        norb_scalar_shci = int(emb_params['scalar_shci']['nactive'])
+        logging.debug(f'norb_scalar_shci read from input : {norb_scalar_shci}')
+    else:
+        norb_scalar_shci = M_full - ncore_afqmc
+        logging.info(f'norb_scalar_shci not set : using full basis minus afqmc core orbitals : {norb_scalar_shci}')
+
+
+    if emb_params['scalar_shci']['nelec'] != 'None':
+        nelec_scalar_shci = int(emb_params['scalar_shci']['nelec'])
+        logging.debug(f'nelec_scalar_shci read from input : {nelec_scalar_shci}')
+    else:
+        norb_scalar_shci = sum(mol.nelec) - 2*ncore_afqmc
+        logging.info(f'nelec_scalar_shci not set : using all electrons minus afqmc core electrons : {nelec_scalar_shci}')
+
+    if emb_params['soc_shci']['nactive'] != 'None':
+        norb_soc_shci = int(emb_params['soc_shci']['nactive'])
+        logging.debug(f'norb_soc_shci read from input : {norb_soc_shci}')
+    else:
+        norb_soc_shci = M_full - ncore_afqmc
+        logging.info(f'norb_soc_shci not set : using full basis minus afqmc core orbitals : {norb_soc_shci}')
+
+    if emb_params['soc_shci']['nelec'] != 'None':
+        nelec_soc_shci = int(emb_params['soc_shci']['nelec'])
+        logging.debug(f'nelec_soc_shci read from input : {nelec_soc_shci}')
+    else:
+        nelec_soc_shci = sum(mol.nelec) - 2*ncore_afqmc
+        logging.info(f'nelec_soc_shci not set : using all electrons minus afqmc core electrons : {nelec_soc_shci}')
 
     # 1. initial SCF
     mf = scf.ROHF(mol).newton()
@@ -338,12 +360,6 @@ def main(geom,nroots=1,avg_nroots=None,run_scalar=True,emb_params=None,**mol_kwa
     rohf_A = custom_ROHF(mol, S, E_const, oneBody, eri=hsints_to_eri(twoBody))
 
     if run_scalar:
-
-        try:
-            assert norb_scalar_shci is not None and nelec_scalar_shci is not None
-        except AssertionError:
-            logging.error('scalar SHCI requested, but no active space is set for scalar SHCI')
-            return
 
         if avg_nroots is None:
             avg_nroots = nroots
