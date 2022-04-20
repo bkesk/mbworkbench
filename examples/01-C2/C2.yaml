@@ -1,0 +1,18 @@
+geom:
+  comment: "a basic Carbon dimer"
+  atoms: |
+    C 0.0 0.0  1.0
+    C 0.0 0.0 -0.5
+basis:
+  C:
+    pyscf_lib: True
+    data: ccpvdz
+molecule:
+    spin: 0
+    charge: 0
+    symmetry: null
+scf:
+    type: rohf
+    params:
+      chkfile: test-rohf.chk
+      max_cycle: 10
