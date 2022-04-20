@@ -154,16 +154,13 @@ def read_embedding_params(fname):
     logging.debug(f' input_file = {input_file} ')
     
     try:
-        ecp = input_file['embedding']
-    except KeyError:
+        emb = input_file['embedding']
+        logging.debug(f' emb = {emb} ')
+        return emb
+    except KeyError as e:
         print(f'\n [+] no embedding parameters found in input file : proceding with no embedding ')
+        logging.debug(f'could not read embedding paramers: {e}')
         return None
-
-    emb = input_file['embedding']
-    logging.debug(f' emb = {emb} ')
-
-    return emb
-
 
 def get_args():
     '''
@@ -234,7 +231,8 @@ def get_args():
     return args
 
 def SOC_SHCI(mf, norb, nelec, nroots=1, maxM=1000, tol=1.0e-8, ncore_afqmc=0, afqmc_basis=None, *args, **kwargs):
-    
+    # TODO: needs to write the input file, and FCIDUMP file as well (?)
+
     mc = mcscf.CASCI(mf, norb, nelec, *args, **kwargs)
     if nroots > 1:
         mc.nroots = nroots
@@ -278,8 +276,6 @@ def main(geom,nroots=1,avg_nroots=None,run_scalar=True,emb_params=None,**mol_kwa
         ncore_afqmc = int(emb_params['afqmc']['ncore'])
     else:
         ncore_afqmc = 0
-
-    
 
     mol = gto.M(atom=geom, **mol_kwargs)
     M_full = mol.nao_nr()
