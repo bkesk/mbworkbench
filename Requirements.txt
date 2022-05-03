@@ -1,0 +1,4 @@
+pyyaml
+pyscf
+numpy
+h5py
