@@ -1,8 +1,12 @@
 import logging
 import argparse
 
+from pyscf.gto import Mole
+
 from mbworkbench.io.input_file import mol_from_input
 from mbworkbench.scf.io import read_scf_input
+
+from mbworkbench.lib import block as blk
 
 '''
 run Basic SCF calculations / save results for latter use in mbworkbench
@@ -15,7 +19,6 @@ def get_cli_args():
     '''
     Read CLI arguments for running SCF.
 
-    TODO: consider including an 'SCF' section to the input file.
     TODO: add a DFT XC field to SCF section of input file.
     TODO: 'with SOC' field for input file - default is False
     '''
@@ -42,9 +45,88 @@ def get_cli_args():
     args = parser.parse_args()
     return args
 
+def scf_core(data, scf_type, scf_params):
+    '''
+    run SCF within a Workflow context.
+    '''
+    from pyscf import scf
+
+    try:
+        mol = data['mol']
+    except KeyError:
+        logging.error('[dev] mol not in Workflow data.')
+        raise ValueError("Workflow data incomplete")
+    
+    if scf_type == 'rohf':
+        mf = scf.ROHF(mol)
+    elif scf_type == 'uhf':
+        mf = scf.UHF(mol)
+    elif scf_type == 'ghf':
+        mf = scf.GHF(mol)
+    elif scf_type == 'socghf':
+        mf = scf.GHF(mol)
+        mf.with_soc = True
+    else:
+        logging.error(f'[dev] unkown SCF type = {scf_type}')
+        raise ValueError
+    
+    print(f'      [+] PySCF SCF params:')
+    for key in scf_params.keys():
+        print(f'       {key} : {scf_params[key]}')
+        setattr(mf, key, scf_params[key])
+
+    print(f'      [+] Running SCF ... ')
+    mf.kernel()
+
+
+
+class Scf_Block(blk.Block):
+    # TODO: implement SCF block class
+    def __init__(self, name):
+        super().__init__(name)
+        
+    def step(self, data):
+
+        scf_type, scf_params = read_scf_input(data['input_file'])
+
+        # make the memomry intensive steps here!
+        try:
+            assert self.status == blk.OKAY_2_RUN
+        except AssertionError:
+            logging.error("[dev] Attempted to run block without status OKAY_2_RUN ")
+            self.status = blk.FAILED
+            self.tear_down()
+            return
+
+        try:
+            scf_core(data, scf_type, scf_params)
+            self.status = blk.COMPLETE
+            return
+        except Exception as e:
+            logging.error(f"SCF block failed to run. Exception: {e}")
+            self.status = blk.FAILED
+            self.tear_down()
+            return
+
+    def check_data(self, data):
+        # Q: Are there any general validation checks? or all Block-specific?
+        #super().check_data(data)
+        try:
+            assert 'mol' in data.keys()
+            assert isinstance(data['mol'],Mole)
+            self.status = blk.OKAY_2_RUN
+        except AssertionError as e:
+            logging.error(f" {self.name} : Workflow data is not correct. Exception: {e}")
+            self.status = blk.FAILED
+
+
+
+
 def main():
     '''
-    Run an SCF calculation based on settings from YAML / cli
+    Run an standalone SCF calculation based on settings from YAML / cli
+    This is meant to be used outside of 'Workflow'. This can be usefule if
+    there is difficulty converging an SCF result, for example.
     '''
     from pyscf import scf
 

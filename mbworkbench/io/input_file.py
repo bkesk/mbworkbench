@@ -219,3 +219,21 @@ def _read_embedding_params(fname):
         logging.debug(f'could not read embedding paramers: {e}')
         return None
 
+
+def read_workflow_def(fname):
+    '''
+    Read high-level workflow definition from input file.
+    
+    returns list of workflow block names
+    '''
+    with open(fname,'r') as f:
+        input_file = safe_load(f)
+
+    try:
+        wkflw = input_file['workflow']
+        logging.debug(f' workflow = {wkflw} ')
+        return wkflw
+    except KeyError as e:
+        print(f'\n [+] no workflow definition found in input file')
+        logging.debug(f'could not read workflow definition: {e}')
+        return None
