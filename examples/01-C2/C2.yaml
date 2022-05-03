@@ -11,8 +11,12 @@ molecule:
     spin: 0
     charge: 0
     symmetry: null
+    verbose: 4
 scf:
     type: rohf
     params:
       chkfile: test-rohf.chk
       max_cycle: 10
+workflow:
+  - molecule
+  - scf
