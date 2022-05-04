@@ -24,9 +24,7 @@ class Workflow:
 
 
     def run(self):
-        for block_def in self.blocks[self.current_block:]:
-
-            block = block_def[1](name=block_def[0])
+        for block in self.blocks[self.current_block:]:
 
             logging.info("Checking if block can run")
             block.check_data(self.data)
@@ -49,17 +47,23 @@ class Workflow:
             definition = read_workflow_def(self.data['input_file'])
 
         self.blocks = generate_blocks(definition)
-        #raise NotImplementedError
+
 
     def restart(self):
-        self.write_chk()
+        self.load_chk()
         self.run()
+
 
     def pause(self):
         self.write_chk()
 
+
     def write_chk(self):
-        # TODO: Need to serialize objects somehow.
+        '''
+        Write's workflow info to checkpoint, and calls the current block's 'write_to_chk' method.
+
+        Each Block class is responsible for reading/writing it's own data, and for serializing/deserializing data.
+        '''
         logging.info('Writing workflow.chk')
         def _try_write(f, key, data):
             try:
@@ -71,19 +75,34 @@ class Workflow:
                 logging.warning(f"Couldn't write {key} to checkpoint. Exception: {e} ")
 
         with h5.File('workflow.chk','a') as f:            
-            for key in self.data:
-                _try_write(f, 'Data/' + key, self.data[key])
+            #for key in self.data:
+            #    _try_write(f, 'Data/' + key, self.data[key])
             _try_write(f, 'current_block', self.current_block)
             
+        for block in self.blocks[:self.current_block]:
+            block.write_to_chk(self.data, 'workflow.chk')
+
     def load_chk(self):
+        '''
+        Load's Workflow data from checkpoint, and all block data
+        *prior* to the current block.
+        '''
         logging.info('Loading workflow.chk')
         try:
             with h5.File('workflow.chk','r') as f:
                 self.current_block = f['current_block'][...]
-                for key in f['Data'].keys():
-                    self.data[key] = f['Data'][key][...]
+                
+            for block in self.blocks[:self.current_block]:
+                block.load_from_chk(self.data, 'workflow.chk')
+
         except Exception as e:
             logging.warning(f"read from checkpoint workflow.chk failed: {e}")
+
+############################################
+#                                          #
+#       Define known Block classes         #  
+#                                          #
+############################################
 
 from mbworkbench.scf.hf import Scf_Block
 from mbworkbench.system.molecule import Molecule_GTO
@@ -105,7 +124,7 @@ def generate_blocks(definition):
     for i,block in enumerate(definition):
         logging.info(f'Adding Block {i} : {block}')
         try:
-            blocks.append((block, KNOWN_BLOCKS[block]))
+            blocks.append(KNOWN_BLOCKS[block](name=block))
         except KeyError:
             logging.error("Invalid block name in workflow")
         except Exception as e:

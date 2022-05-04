@@ -1,3 +1,6 @@
+import logging
+import h5py as h5
+
 # constant status codes
 NOT_RUN = 0
 OKAY_2_RUN = 1
@@ -8,6 +11,12 @@ FAILED = -1
 class Block:
     '''
     base class for Workflow "Blocks".
+
+    Open Q's / problems:
+    1. should each block have an attribute that tells it what
+    data it needs as input, and what data it will output to the
+    workflow data?
+
     '''
 
     def __init__(self, name):
@@ -38,3 +47,41 @@ class Block:
         '''
         print("Tore Down...")
 
+    def write_to_chk(self, data, chkfile=None):
+        '''
+        Write data for Block to chkfile.
+
+        Dev Note: specific Block types are responsible for serializing/deserializing
+        any objects that they have added to 'data'.
+        '''
+        
+        try:
+            assert chkfile is not None
+            with h5.File(chkfile, 'a') as f:
+                generic = 'test'
+                if self.name + '/generic' in chkfile:
+                    temp = f[self.name + '/generic' ]
+                    temp[...] = generic
+                else:
+                    f.create_dataset(self.name + '/generic', data=generic)
+        except AssertionError:
+            logging.error("no checkpoint file specified")
+    
+
+    def load_from_chk(self, data, chkfile=None):
+        '''
+        Read Block's data from chkfile, and add it to data
+
+        Dev Note: specific Block types are responsible for serializing/deserializing
+        any objects that they have added to 'data'.
+        '''
+        try:
+            assert chkfile is not None
+        except AssertionError:
+            logging.error("no checkpoint file specified")
+
+        try:
+            with h5.File(chkfile, 'r') as f:
+                generic = f[self.name + '/generic' ][...]
+        except ValueError as e:
+            logging.error(f"read from checkpoint failed. Excetion {e}")

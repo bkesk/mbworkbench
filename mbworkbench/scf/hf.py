@@ -1,5 +1,6 @@
 import logging
 import argparse
+import h5py as h5
 
 from pyscf.gto import Mole
 
@@ -119,7 +120,43 @@ class Scf_Block(blk.Block):
             logging.error(f" {self.name} : Workflow data is not correct. Exception: {e}")
             self.status = blk.FAILED
 
+    def write_to_chk(self, data, chkfile=None):
+        '''
+        Write data for Block to chkfile.
 
+        Dev Note: specific Block types are responsible for serializing/deserializing
+        any objects that they have added to 'data'.
+        '''
+        
+        try:
+            assert chkfile is not None
+            with h5.File(chkfile, 'a') as f:
+                generic = 'test'
+                if self.name + '/generic' in chkfile:
+                    temp = f[self.name + '/generic' ]
+                    temp[...] = generic
+                else:
+                    f.create_dataset(self.name + '/generic', data=generic)
+        except AssertionError:
+            logging.error("no checkpoint file specified")
+
+    def load_from_chk(self, data, chkfile=None):
+        '''
+        Read Block's data from chkfile, and add it to data
+
+        Dev Note: specific Block types are responsible for serializing/deserializing
+        any objects that they have added to 'data'.
+        '''
+        try:
+            assert chkfile is not None
+        except AssertionError:
+            logging.error("no checkpoint file specified")
+
+        try:
+            with h5.File(chkfile, 'r') as f:
+                generic = f[self.name + '/generic' ][...]
+        except ValueError as e:
+            logging(f"read from checkpoint failed. Excetion {e}")
 
 
 def main():
