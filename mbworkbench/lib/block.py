@@ -45,7 +45,7 @@ class Block:
         '''
         defines what to do if a probolem is encountered
         '''
-        print("Tore Down...")
+        logging.error("Block couldn't run. Tearing down.")
 
     def write_to_chk(self, data, chkfile=None):
         '''
@@ -85,3 +85,24 @@ class Block:
                 generic = f[self.name + '/generic' ][...]
         except ValueError as e:
             logging.error(f"read from checkpoint failed. Excetion {e}")
+
+
+# Blocks for testing
+class FailBlock(Block):
+    '''
+    '''
+    def __init__(self, name):
+        super().__init__(name)
+
+    def step(self, data):
+        assert 1 == 2 
+
+class PassBlock(Block):
+    '''
+    '''
+    def __init__(self, name):
+        super().__init__(name)
+
+    def step(self, data):
+        assert 1 == 1 
+

@@ -108,6 +108,8 @@ from mbworkbench.scf.hf import Scf_Block
 from mbworkbench.system.molecule import Molecule_GTO
 
 KNOWN_BLOCKS = {'base' : blk.Block,
+                'pass' : blk.PassBlock,
+                'fail' : blk.FailBlock,
                 'molecule' : Molecule_GTO,
                 'scf' : Scf_Block}
 
@@ -124,11 +126,13 @@ def generate_blocks(definition):
     for i,block in enumerate(definition):
         logging.info(f'Adding Block {i} : {block}')
         try:
-            blocks.append(KNOWN_BLOCKS[block](name=block))
+            current_block = KNOWN_BLOCKS[block](name=block)
         except KeyError:
             logging.error("Invalid block name in workflow")
         except Exception as e:
             logging.error(f"Incountered Error {e}")
+
+        blocks.append(current_block)
 
     return blocks
 
