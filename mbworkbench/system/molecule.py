@@ -29,11 +29,11 @@ class Molecule_GTO(blk.Block):
         try:
             assert chkfile is not None
             with h5.File(chkfile, 'a') as f:
-                if 'mol' in chkfile:
+                if '/mol' in f:
                     temp = f['mol']
                     temp[...] = dumps(data['mol'])
                 else:
-                    f.create_dataset('mol', data=data['mol'].dumps())
+                    f.create_dataset('mol', data=dumps(data['mol']))
         except AssertionError:
             logging.error("no checkpoint file specified")
 

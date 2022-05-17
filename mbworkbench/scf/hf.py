@@ -79,6 +79,7 @@ def scf_core(data, scf_type, scf_params):
     print(f'      [+] Running SCF ... ')
     mf.kernel()
 
+    data['scf/mo_coeff'] = mf.mo_coeff
 
 
 class Scf_Block(blk.Block):
@@ -133,7 +134,7 @@ class Scf_Block(blk.Block):
             assert chkfile is not None
             with h5.File(chkfile, 'a') as f:
                 generic = 'test'
-                if self.name + '/generic' in chkfile:
+                if self.name + '/generic' in f:
                     temp = f[self.name + '/generic' ]
                     temp[...] = generic
                 else:
