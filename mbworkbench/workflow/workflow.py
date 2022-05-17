@@ -116,7 +116,7 @@ def generate_blocks(definition):
     generate blocks based on the givien definition.
     
     notes: we may want to try to look these up as we are trying to setup/run them,
-    not all at once! Look at this on the dry eraes board first!
+    not all at once! Look at this on the dry erase board first!
     '''
     
     blocks = []

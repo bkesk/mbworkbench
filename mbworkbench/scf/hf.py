@@ -82,10 +82,11 @@ def scf_core(data, scf_type, scf_params):
 
 
 class Scf_Block(blk.Block):
-    # TODO: implement SCF block class
+
     def __init__(self, name):
         super().__init__(name)
-        
+
+
     def step(self, data):
 
         scf_type, scf_params = read_scf_input(data['input_file'])
