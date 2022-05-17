@@ -106,12 +106,14 @@ class Workflow:
 
 from mbworkbench.scf.hf import Scf_Block
 from mbworkbench.system.molecule import Molecule_GTO
+from mbworkbench.afqmc import Write_Afqmclab
 
 KNOWN_BLOCKS = {'base' : blk.Block,
                 'pass' : blk.PassBlock,
                 'fail' : blk.FailBlock,
                 'molecule' : Molecule_GTO,
-                'scf' : Scf_Block}
+                'scf' : Scf_Block,
+                'write_afqmclab' : Write_Afqmclab}
 
 def generate_blocks(definition):
     '''

@@ -11,12 +11,20 @@ molecule:
     spin: 0
     charge: 0
     symmetry: null
-    verbose: 4
+    verbose: 3
 scf:
     type: rohf
     params:
       chkfile: test-rohf.chk
       max_cycle: 10
+write_afqmclab:
+    basis: scf
+    integrals: molecule
+    write_wfns:
+      - scf
+    run_params:
+      dt: 0.02
 workflow:
   - molecule
   - scf
+  - write_afqmclab
