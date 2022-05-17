@@ -2,7 +2,7 @@
 
 ## For Users
 
-Instructions for using Maby-Body workbench here.
+Instructions for using Maby-Body workbench will go here.
 
 ## For Developers
 
@@ -15,16 +15,15 @@ A `Workflow` instance contains the data that may be relevant throughout the work
 This is a design decision which allows `Block` instances to be invoked without needing
 to directly communicate with one another.
 
-Each 'Block' type is defined in a subdirectory within `/mbworkbench`directory.
-Any implementation of a 'Block' should be independent of other blocks and should only depend on
+Each `Block` type is defined in a subdirectory within the `/mbworkbench` directory.
+Any implementation of a `Block` should be independent of other blocks and should only depend on
 the presence of settings in the input yaml file, and/or on data which can be found in the
-Workflow data.
-Whenever possible, a Block type should implement the `check_data` function to ensure the presence
+`Workflow` data.
+Whenever possible, a `Block` type should implement the `check_data()` function to ensure the presence
 of all necessary settings/data before the workflow attempts to run the block.
 
 In some cases, block implementations need additional utlities beyond what is feasible to place in a single source file.
-Any generally useful functions/methods should be placed within `/mbworkbench/lib/[useful source].py`.
-Anything code that is very specific (i.e. interfacing to/from a block specific third-party resource) should be included
-within the block implementations directory. i.e. inside of `/mbworkbench/[block directory]/utils/[specific file here].py`.
-
+Any generally useful functions/classes should be placed within `/mbworkbench/lib/`, perhaps in a submodule.
+Any code that is very specific (i.e. interfacing to/from a third-party resource) should be included
+within the block implementations directory. i.e. inside of `/mbworkbench/[block directory]/utils/`.
 
