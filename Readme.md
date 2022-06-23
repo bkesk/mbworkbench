@@ -25,5 +25,4 @@ of all necessary settings/data before the workflow attempts to run the block.
 In some cases, block implementations need additional utlities beyond what is feasible to place in a single source file.
 Any generally useful functions/classes should be placed within `/mbworkbench/lib/`, perhaps in a submodule.
 Any code that is very specific (i.e. interfacing to/from a third-party resource) should be included
-within the block implementations directory. i.e. inside of `/mbworkbench/[block directory]/utils/`.
-
+within the block implementation's directory. i.e. inside of `/mbworkbench/[block directory]/utils/` or similar.
