@@ -201,3 +201,64 @@ def writeROHF(wf, filename, nElec, noise=0.0, is_complex=False):
     f.close()
 
 
+def transform_rmo(nElec,mo_coeff,S,orb_basis=None):
+    ''' Make a wave function by tranforming a PySCF 
+    ROHF-type determinat to the chosen orbital basis (default: mo_coeff)
+    
+    Inputs:
+       - nElec : tuple of two integers specifying the number of up and down 
+                electron, respectively
+       - mo_coeff : numpy array containing the ROHF molecular orbital coefficients (PySFC format)
+       - S : overlap matrix of the basis which molecular orbital coefficients are represented in
+       - (optional) orb_basis : numpy array containing basis orbitals to represent ROHF orbitals in
+                                must be respresented in the same underlying basis as the ROHF orbitals!
+
+    Returns:
+       - wf : a numpy array containing the ROHF wavefunction, where the ROHF orbitals are expressed in
+               in terms of the orbitals in 'orb_basis' (usually the ROHF orbitals themselves)
+
+    '''
+
+    if orb_basis is None:
+        orb_basis = mo_coeff
+
+    # for readibility
+    wf_ao = mo_coeff
+    C = orb_basis
+
+    wf = np.matmul(C.conj().T, np.matmul(S,wf_ao))
+
+    return wf
+
+def transform_umo(nElec,mo_coeff,S,orb_basis=None):
+    ''' Make a wave function by tranforming a PySCF 
+    UHF-type determinat to the chosen orbital basis (default: mo_coeff[0] i.e. the alpha orbitals)
+    
+    Inputs:
+       - nElec : tuple of two integers specifying the number of up and down 
+                electron, respectively
+       - mo_coeff : numpy array containing the UHF molecular orbital coefficients (PySFC format)
+       - S : overlap matrix of the basis which molecular orbital coefficients are represented in
+       - (optional) orb_basis : numpy array containing basis orbitals to represent UHF orbitals in
+                                must be respresented in the same underlying basis as the UHF orbitals!
+
+    Returns:
+       - wf : a numpy array containing the UHF wavefunction, where the UHF orbitals are expressed in
+               in terms of the orbitals in 'orb_basis' (usually the UHF alpha-orbitals)
+
+    '''
+
+    if orb_basis is None:
+        orb_basis = mo_coeff[0] # default to alhpa-orbitals
+
+    # for readibility
+    wf_up_ao = mo_coeff[0]
+    wf_down_ao = mo_coeff[1]
+
+    C = orb_basis
+    
+    wf_up = np.matmul(C.conj().T, np.matmul(S,wf_up_ao))
+    wf_down = np.matmul(C.conj().T, np.matmul(S,wf_down_ao))
+    
+    return [wf_up, wf_down]
+

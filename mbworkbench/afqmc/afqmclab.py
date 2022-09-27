@@ -44,10 +44,16 @@ class Write_Afqmclab(blk.Block):
             #TODO: add afqmc_basis to the data!
             logging.info('Setting AFQMC orbital basis')
             get_afqmc_basis(settings['__orbital_basis'],data)
+            
             logging.info('building/write AFQMCLab model_param file')
             write_model_file(settings, data)
+            
             logging.info('writing AFQMCLab afqmc_param file')
             write_afqmc_param(settings)
+
+            logging.info('writting wavefunctions in AFQMCLab format')
+            write_afqmclab_wfns(settings, data)
+
             self.status = blk.COMPLETE
             return
         except Exception as e:
@@ -192,7 +198,7 @@ def write_afqmc_param(settings):
     '''
     
     with open('afqmc_param','w') as f:
-        f.write('''
+        f.write(f'''
 dt                                  {settings['dt']}
 thermalSize                         {settings['_thermalization_size']}
 writeNumber                         {settings['_block_to_write']}
@@ -336,3 +342,39 @@ def get_two_body_from_mol(data):
     data['cholesky_vecs'] = choleskyAO
     mol.verbose = verb
 
+
+def write_afqmclab_wfns(settings, data):
+    '''
+    Write requested wavefunctions in AFQMCLab format
+    '''
+
+    for wfn in settings['__write_wfns']:
+        
+        if wfn == 'scf':
+            # number of electrons
+            nElec = data['mol'].nelec # TODO: get this from the scf.mol - especially for frozen core!
+
+            # get wfn data
+            scf_type = data['scf/scf_type']
+            mo_coeff = data['scf/mo_coeff']
+
+            # convert to AFQMC orbital basis / import appropriate write function
+            afqmc_orbitals = data['afqmc_basis']
+
+            if scf_type == 'rohf':
+                from mbworkbench.afqmc.io_afqmclab import writeROHF, transform_rmo
+                orbitals = transform_rmo(nElec, mo_coeff,
+                                        S=data['mol'].intor('int1e_ovlp'),
+                                        orb_basis=afqmc_orbitals)
+                writeROHF(orbitals, 'phi-ROHF.dat', nElec)
+
+            elif scf_type == 'uhf':
+                from mbworkbench.afqmc.io_afqmclab import writeUHF, transform_umo 
+                orbitals = transform_umo(nElec, mo_coeff,
+                                        S=data['mol'].intor('int1e_ovlp'),
+                                        orb_basis=afqmc_orbitals)
+                writeUHF(orbitals, 'phi-UHF.dat', nElec)
+            else:
+                raise NotImplementedError(f"No definition exists to write {scf_type} wavefunctions in AFQMCLab format ")
+        else:
+            raise NotImplementedError(f" No routine for writting {settings['__write_wfns']} wavefunctions in AFQMCLab format")

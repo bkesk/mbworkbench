@@ -80,6 +80,7 @@ def scf_core(data, scf_type, scf_params):
     mf.kernel()
 
     data['scf/mo_coeff'] = mf.mo_coeff
+    data['scf/scf_type'] = scf_type
 
 
 class Scf_Block(blk.Block):
