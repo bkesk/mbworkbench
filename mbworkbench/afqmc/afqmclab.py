@@ -14,7 +14,7 @@ import h5py as h5
 from yaml import safe_load
 
 from mbworkbench.lib import block as blk
-from mbworkbench.io.afqmclab import writeModel, writeROHF
+from mbworkbench.afqmc.io_afqmclab import writeModel, writeROHF
 
 class Write_Afqmclab(blk.Block):
 

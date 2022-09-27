@@ -4,6 +4,7 @@ import h5py as h5
 
 from mbworkbench.lib.linalg import check_hermitian
 
+#TODO: This submodule should exist under the afqmc submodule
 
 afqmclab_complex = np.dtype([("real","float64"),("imag","float64")])
 
