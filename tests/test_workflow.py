@@ -14,8 +14,8 @@ def test_need_inputfile(caplog):
 
 # TODO: test that we get the expected output as well
 @pytest.mark.parametrize('expected', (
-    ('pass.yaml', 'pass'),
-    ('fail.yaml', 'fail'),
+    ('tests/pass.yaml', 'pass'),
+    ('tests/fail.yaml', 'fail'),
 ))
 def test_workflow(expected, monkeypatch, caplog):
     '''
@@ -29,6 +29,7 @@ def test_workflow(expected, monkeypatch, caplog):
         Recorder.called = True
 
     infile = expected[0]
+
     
     workflow = Workflow(infile)
     assert workflow.current_block == 0
@@ -37,6 +38,12 @@ def test_workflow(expected, monkeypatch, caplog):
     assert len(workflow.blocks) > 0
     
     monkeypatch.setattr('mbworkbench.workflow.Workflow.write_chk', fake_write_chk)
-    workflow.run()
-    assert Recorder.called
+    
+    if expected[1] == 'fail':
+        with pytest.raises(AssertionError) as e:
+            workflow.run()
+            assert Recorder.called
+    else:
+        workflow.run()
+        assert Recorder.called
 

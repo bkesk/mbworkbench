@@ -95,7 +95,8 @@ class FailBlock(Block):
         super().__init__(name)
 
     def step(self, data):
-        assert 1 == 2 
+        self.status = FAILED
+        assert 1 == 2
 
 class PassBlock(Block):
     '''
