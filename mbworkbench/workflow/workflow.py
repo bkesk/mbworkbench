@@ -104,8 +104,8 @@ class Workflow:
 #                                          #
 ############################################
 
-from mbworkbench.scf.hf import Scf_Block
-from mbworkbench.system.molecule import Molecule_GTO
+from mbworkbench.scf import Scf_Block
+from mbworkbench.system import Molecule_GTO
 from mbworkbench.afqmc import Write_Afqmclab
 
 KNOWN_BLOCKS = {'base' : blk.Block,

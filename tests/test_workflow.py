@@ -1,6 +1,6 @@
 import pytest
 
-from mbworkbench.workflow.workflow import Workflow
+from mbworkbench.workflow import Workflow
 from mbworkbench.lib.block import Block
 
 
@@ -36,7 +36,7 @@ def test_workflow(expected, monkeypatch, caplog):
     workflow.build()
     assert len(workflow.blocks) > 0
     
-    monkeypatch.setattr('mbworkbench.workflow.workflow.Workflow.write_chk', fake_write_chk)
+    monkeypatch.setattr('mbworkbench.workflow.Workflow.write_chk', fake_write_chk)
     workflow.run()
     assert Recorder.called
 

@@ -13,7 +13,7 @@ LOG_FORMATS = {'error' : '[%(levelname)s] %(message)s',
 #logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(created)f : %(funcName)s says : %(message)s')
 
 # TODO: fix packaging so that we can use 'from mbworkbench.workflow import Workflow', etc.
-from mbworkbench.workflow.workflow import Workflow
+from mbworkbench.workflow import Workflow
 from mbworkbench.io.cli import get_cli_args
 
 
