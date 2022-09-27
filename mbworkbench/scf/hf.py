@@ -178,7 +178,7 @@ def main():
     scf_type, scf_params = read_scf_input(cli.input_file)
 
     # cli has priority over input file
-    if cli.type is not 'infile':
+    if cli.type != 'infile':
         scf_type = cli.type
 
     # TODO use input file for verbosity!

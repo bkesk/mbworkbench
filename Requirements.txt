@@ -2,3 +2,5 @@ pyyaml
 pyscf
 numpy
 h5py
+pytest
+coverage
